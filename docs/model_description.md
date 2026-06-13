@@ -1,11 +1,12 @@
 ﻿# DC Motor Position Control — Technical Description
 
-## System Overview
-A DC motor converts electrical energy into mechanical rotation.
-The position control system uses a PID controller in a closed-loop configuration
-to reach and maintain a desired angular position.
+## Workflow
+Mathematical Model → pidtune Auto-Tuning → Simulink → Embedded Coder → SIL Validation → STM32 ready
 
 ## Mathematical Model
+
+### Transfer Function (Position)
+G(s) = Kt / [(Ls + R)(Js + b) + Kt*Ke] * 1/s
 
 ### Electrical Equation
 L * di/dt = V - (R*i + Ke * dtheta/dt)
@@ -13,35 +14,48 @@ L * di/dt = V - (R*i + Ke * dtheta/dt)
 ### Mechanical Equation
 J * d²theta/dt² = Kt*i - b * dtheta/dt
 
-### PID Controller
-u(t) = Kp*e(t) + Ki*integral(e(t)dt) + Kd*de(t)/dt
-
-where e(t) = theta_ref - theta(t)
-
 ## Motor Parameters
-| Parameter | Value  | Unit     | Description                  |
-|-----------|--------|----------|------------------------------|
-| R         | 1.0    | Ohm      | Armature resistance          |
-| L         | 0.5    | H        | Armature inductance          |
-| Kt        | 0.01   | Nm/A     | Motor torque constant        |
-| Ke        | 0.01   | V·s/rad  | Back-EMF constant            |
-| J         | 0.01   | kg·m²    | Rotor inertia                |
-| b         | 0.1    | Nm·s/rad | Viscous friction coefficient |
+| Parameter | Value | Unit     | Description          |
+|-----------|-------|----------|----------------------|
+| R         | 1.0   | Ohm      | Armature resistance  |
+| L         | 0.5   | H        | Armature inductance  |
+| Kt        | 0.01  | Nm/A     | Torque constant      |
+| Ke        | 0.01  | V.s/rad  | Back-EMF constant    |
+| J         | 0.01  | kg.m2    | Rotor inertia        |
+| b         | 0.1   | Nm.s/rad | Viscous friction     |
 
-## PID Tuning Results
-| Configuration       | Overshoot | Settling Time | Steady-State Error |
-|--------------------|-----------|---------------|--------------------|
-| No controller      | —         | —             | infinite           |
-| PI (1, 1, 0)       | ~10-20%   | ~1.5 s        | ≈ 0                |
-| PID (1, 0.5, 0.05) | < 2%      | ~1 s          | ≈ 0                |
+## PID Auto-Tuning Results (pidtune)
+| Parameter | Value |
+|-----------|-------|
+| Kp        | 43.42 |
+| Ki        | 14.31 |
+| Kd        | 18.95 |
+
+## Step Response Metrics
+| Metric            | Value  |
+|-------------------|--------|
+| Rise Time         | 0.36 s |
+| Overshoot         | 9.62 % |
+| Settling Time     | 4.61 s |
+| Steady-State Error| ≈ 0    |
+
+## Embedded Coder Configuration
+- Target: ERT (Embedded Real-Time)
+- Solver: Fixed-step, ode4
+- Step size: 0.001 s (1 kHz)
+- Generated code: embedded/dc_motor_pid.c
+
+## SIL Validation
+- Normal Simulation vs SIL: curves identical
+- C code validated and STM32 ready
 
 ## Limitations
 - Linear model — no saturation or nonlinearities
 - No external load modeled
-- Parameters manually tuned
+- No temperature dependency
 
 ## Next Steps
-- Automatic PID tuning (MATLAB PID Tuner)
+- HIL with real STM32 hardware
 - LQR controller (state-space optimal control)
 - Cascade control (current -> speed -> position)
-- Embedded implementation on STM32 (Simulink Embedded Coder)
+- AUTOSAR integration

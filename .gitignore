@@ -1,8 +1,16 @@
 ﻿*.asv
 *.autosave
+*.obj
+*.mat
+*.rsp
+*.dmr
+*.mk
+*.fig
+*.bat
+*.tmw
 slprj/
 *.slxc
 *.mex*
-*.fig
 .DS_Store
 Thumbs.db
+embedded/tmwinternal/
